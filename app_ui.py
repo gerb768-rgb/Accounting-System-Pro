@@ -1,23 +1,28 @@
 import flet as ft
-import main  # سنستدعي دوالنا السابقة هنا
+import main
 
 def main_app(page: ft.Page):
-    page.title = "نظام المحاسبة المحترف"
-    
-    # حقل إدخال رقم الفاتورة
-    invoice_input = ft.TextField(label="رقم الفاتورة للبحث")
-    
-    # دالة البحث عند الضغط على الزر
-    def search_click(e):
-        result = main.search_invoice(invoice_input.value)
-        page.add(ft.Text(f"النتيجة: {result}"))
+    # حالة المستخدم (يمكن تغييرها بعد تسجيل الدخول)
+    user_role = "مدير"  # أو "موظف" بناءً على نظام تسجيل الدخول
 
-    # إضافة الأزرار للواجهة
-    page.add(
-        ft.Text("أهلاً بك في نظام الإدارة المالية", size=20),
-        invoice_input,
-        ft.ElevatedButton("بحث عن فاتورة", on_click=search_click),
-        ft.ElevatedButton("عرض تقرير المخزون", on_click=lambda _: main.check_inventory())
-    )
+    def show_dashboard():
+        # أزرار الموظف (الأساسية)
+        buttons = [
+            ft.ElevatedButton("إدخال فاتورة جديدة", icon=ft.icons.ADD),
+            ft.ElevatedButton("فحص المخزون", on_click=lambda _: main.check_inventory())
+        ]
+        
+        # أزرار المدير (الإضافية)
+        if user_role == "مدير":
+            buttons.extend([
+                ft.ElevatedButton("تقرير المبيعات الشامل", icon=ft.icons.REPORTS, on_click=lambda _: main.generate_report()),
+                ft.ElevatedButton("قفل فاتورة", icon=ft.icons.LOCK),
+                ft.ElevatedButton("إدارة المستخدمين", icon=ft.icons.PERSON_ADD)
+            ])
+            
+        page.add(ft.Column(buttons))
+
+    page.add(ft.Text(f"لوحة تحكم: {user_role}", size=25, weight="bold"))
+    show_dashboard()
 
 ft.app(target=main_app)
