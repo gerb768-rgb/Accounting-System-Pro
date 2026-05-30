@@ -1,38 +1,26 @@
-import sqlite3
-
-# دالة لقفل الفاتورة (لا يمكن تعديلها بعد هذا)
-def lock_invoice(invoice_id):
+def process_sale(product_name, quantity_sold, client_name):
     conn = sqlite3.connect('accounting_system.db')
     cursor = conn.cursor()
-    cursor.execute("UPDATE invoices SET status = 'Locked' WHERE id = ?", (invoice_id,))
-    conn.commit()
-    conn.close()
-    print(f"تم قفل الفاتورة رقم {invoice_id} بنجاح. لا يمكن تعديلها الآن.")
-
-# دالة التنبيه بالمخزون (الأحمر والأخضر)
-def check_inventory():
-    conn = sqlite3.connect('accounting_system.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT name, quantity, min_limit FROM inventory")
-    products = cursor.fetchall()
     
-    print("--- تقرير المخزون ---")
-    for p in products:
-        name, qty, limit = p
-        status = "🟢 أخضر (متوفر)" if qty >= limit else "🔴 أحمر (نقص - يرجى الطلب)"
-        print(f"المنتج: {name} | الكمية: {qty} | الحالة: {status}")
-    conn.close()
-
-# دالة معالجة المرتجعات (مع الحفاظ على سلامة الفاتورة)
-def process_return(invoice_id, return_amount):
-    conn = sqlite3.connect('accounting_system.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT status FROM invoices WHERE id = ?", (invoice_id,))
-    status = cursor.fetchone()
+    # 1. التأكد من توفر المخزون
+    cursor.execute("SELECT id, quantity, min_limit FROM inventory WHERE name = ?", (product_name,))
+    product = cursor.fetchone()
     
-    if status and status[0] == 'Locked':
-        print(f"جاري معالجة المرتجع للفاتورة {invoice_id} بمبلغ {return_amount}...")
-        # هنا يتم إضافة قيد المرتجع في قاعدة البيانات
+    if product and product[1] >= quantity_sold:
+        # 2. خصم الكمية من المخزون
+        new_qty = product[1] - quantity_sold
+        cursor.execute("UPDATE inventory SET quantity = ? WHERE name = ?", (new_qty, product_name))
+        
+        # 3. تسجيل الفاتورة
+        cursor.execute("INSERT INTO invoices (client_name, total, status) VALUES (?, ?, ?)", 
+                       (client_name, 0, 'Open')) # الإجمالي سيتم حسابه لاحقاً
+        
+        conn.commit()
+        print("تمت عملية البيع وخصم المخزون بنجاح.")
+        
+        # 4. التنبيه إذا وصل المخزون لمستوى حرج
+        if new_qty < product[2]:
+            print("⚠️ تنبيه: مستوى المخزون أصبح حرجاً (🔴 أحمر)!")
     else:
-        print("خطأ: لا يمكن إجراء مرتجع لفاتورة غير مقفلة!")
+        print("خطأ: الكمية غير متوفرة أو المنتج غير موجود.")
     conn.close()
