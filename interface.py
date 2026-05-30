@@ -1,15 +1,6 @@
-import main
-
-# كلمة مرور المدير (يمكنك تغييرها لاحقاً)
-ADMIN_PASSWORD = "123"
-
-def login():
-    password = input("أدخل كلمة مرور المدير: ")
-    if password == ADMIN_PASSWORD:
-        print("تم تسجيل الدخول بنجاح.")
-        show_menu()
+def show_menu(user_role):
+    print(f"\n--- قائمة النظام ({user_role}) ---")
+    if user_role == "مدير":
+        print("1. فحص المخزون | 2. التقارير | 3. حذف فاتورة")
     else:
-        print("كلمة مرور خاطئة! إغلاق النظام.")
-
-def show_menu():
-    # ... (بقية كود القائمة كما هو)
+        print("1. إدخال فاتورة | 2. فحص المخزون")
